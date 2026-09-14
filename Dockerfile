@@ -78,12 +78,23 @@ RUN printf '%s\n' '#!/usr/bin/env bash' 'exec node /openclaw/dist/entry.js "$@"'
 
 COPY src ./src
 
+# Create an entrypoint script to set trustedProxies dynamically from Railway environment variables
+RUN printf '%s\n' \
+  '#!/usr/bin/env bash' \
+  'set -e' \
+  'if [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then' \
+  '  echo "Configuring trusted proxy for https://${RAILWAY_PUBLIC_DOMAIN}..."' \
+  '  openclaw config set gateway.trustedProxies "[\"https://${RAILWAY_PUBLIC_DOMAIN}\"]" || true' \
+  'fi' \
+  'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
+  && chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # The wrapper listens on $PORT.
 # IMPORTANT: Do not set a default PORT here.
 # Railway injects PORT at runtime and routes traffic to that port.
 # If we force a different port, deployments can come up but the domain will route elsewhere.
 EXPOSE 8080
 
-# Ensure PID 1 reaps zombies and forwards signals.
-ENTRYPOINT ["tini", "--"]
+# Ensure PID 1 reaps zombies and forwards signals, then run the entrypoint script
+ENTRYPOINT ["tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["node", "src/server.js"]
