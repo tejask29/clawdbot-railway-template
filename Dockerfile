@@ -82,10 +82,8 @@ COPY src ./src
 RUN printf '%s\n' \
   '#!/usr/bin/env bash' \
   'set -e' \
-  'if [ -n "$RAILWAY_PUBLIC_DOMAIN" ]; then' \
-  '  echo "Configuring trusted proxy for https://${RAILWAY_PUBLIC_DOMAIN}..."' \
-  '  openclaw config set gateway.trustedProxies "[\"https://${RAILWAY_PUBLIC_DOMAIN}\"]" || true' \
-  'fi' \
+  'echo "Configuring trusted proxies for Railway network..."' \
+  'openclaw config set gateway.trustedProxies "[\"127.0.0.1\", \"::1\", \"10.0.0.0/8\", \"100.64.0.0/10\", \"172.16.0.0/12\"]" || true' \
   'exec "$@"' > /usr/local/bin/docker-entrypoint.sh \
   && chmod +x /usr/local/bin/docker-entrypoint.sh
 
